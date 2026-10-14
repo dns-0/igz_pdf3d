@@ -365,6 +365,19 @@ def collect(scene, units: str, viewport=None, poster_size=None) -> dict:
     if not used_keys:
         raise NothingToExport("The selection has no faces to export.")
 
+    # Centre every mesh on its own origin and move the shift into the node
+    # matrices: viewers that pivot on a node's origin or a mesh's local
+    # centre then land inside the part instead of hundreds of feet away.
+    for key, mesh in meshes.items():
+        pts = mesh["positions"]
+        c = tuple((min(p[i] for p in pts) + max(p[i] for p in pts)) / 2.0 for i in range(3))
+        mesh["positions"] = [(p[0] - c[0], p[1] - c[1], p[2] - c[2]) for p in pts]
+        for ly in layers.values():
+            for node in ly["nodes"]:
+                if node["mesh"] == key:
+                    m = list(node["matrix"]) if node["matrix"] is not None else list(_space.IDENTITY)
+                    m[12], m[13], m[14] = _space.apply(m, c)
+                    node["matrix"] = m
     lo = [float("inf")] * 3
     hi = [float("-inf")] * 3
     for ly in layers.values():

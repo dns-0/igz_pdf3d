@@ -118,13 +118,18 @@ def test_collect_layers_nodes_instances_and_loose(qapp):
     assert [n["name"] for n in steel] == ["IfcBeam Beam", "IfcBeam Beam"]
     assert steel[0]["mesh"] == steel[1]["mesh"]                 # instanced
     centre = [216.535, 19.685, -19.685]                          # of the whole scene, in inches
-    assert [round(v, 3) for v in steel[0]["matrix"][12:15]] == [round(-c, 3) for c in centre]
-    assert [round(v, 3) for v in steel[1]["matrix"][12:15]] == [round(78.74 - centre[0], 3), -19.685, 19.685]
+    # Every node's origin is its own part's centre, relative to the scene centre.
+    assert [round(v, 3) for v in steel[0]["matrix"][12:15]] == [round(19.685 - centre[0], 3), 0.0, 0.0]
+    assert [round(v, 3) for v in steel[1]["matrix"][12:15]] == [round(78.74 + 19.685 - centre[0], 3), 0.0, 0.0]
     loose = out["layers"][0]["nodes"]
     assert loose[0]["name"] == C.LOOSE_NAME
-    assert [round(v, 3) for v in loose[0]["matrix"][12:15]] == [round(-c, 3) for c in centre]
+    assert [round(v, 3) for v in loose[0]["matrix"][12:15]] == [round(5 * 39.3700787, 3), 0.0, 0.0]
     assert loose[0]["matrix"][:12] == [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
     assert [round(v, 3) for v in out["offset"]] == centre
+    for mesh in out["meshes"].values():                           # meshes are centred on their origin
+        for axis in range(3):
+            vals = [p[axis] for p in mesh["positions"]]
+            assert abs(min(vals) + max(vals)) < 1e-6
     mesh = out["meshes"][steel[0]["mesh"]]
     assert len(mesh["positions"]) == 8 and len(mesh["faces"]) == 12
     assert out["counts"] == {"groups": 2, "faces": 18}            # 6 per box, plus the loose box
@@ -185,9 +190,10 @@ def test_collect_textures_bake_per_placement(qapp, tmp_path):
     out = C.collect(scene, "m")
     nodes = out["layers"][0]["nodes"]
     assert nodes[0]["mesh"] != nodes[1]["mesh"]                  # baked, not instanced
-    assert nodes[0]["matrix"] == nodes[1]["matrix"]              # both carry only the recentring shift
     m0, m1 = out["meshes"][nodes[0]["mesh"]], out["meshes"][nodes[1]["mesh"]]
-    assert [round(v, 3) for v in m1["positions"][1]] == [round(v, 3) for v in (m0["positions"][1][0] + 5.0, m0["positions"][1][1], m0["positions"][1][2])]
+    assert [[round(v, 3) for v in p] for p in m1["positions"]] == [[round(v, 3) for v in p] for p in m0["positions"]]
+    t0, t1 = nodes[0]["matrix"][12:15], nodes[1]["matrix"][12:15]
+    assert [round(t1[i] - t0[i], 3) for i in range(3)] == [5.0, 0.0, 0.0]
     assert all(f[3] is not None for f in m0["faces"])
     assert len(m0["texcoords"]) > 0
     assert out["materials"] == [{"name": "Brick", "color": (1.0, 1.0, 1.0), "opacity": None,
@@ -283,4 +289,5 @@ def test_collect_recentres_scene_far_from_origin(qapp):
     assert [round(v, 6) for v in lo] == [-0.5, -0.5, -0.5] and [round(v, 6) for v in hi] == [0.5, 0.5, 0.5]
     assert [round(v, 6) for v in out["offset"]] == [100.5, 300.5, -200.5]
     node = out["layers"][0]["nodes"][0]
-    assert [round(v, 6) for v in node["matrix"][12:15]] == [-100.5, -300.5, 200.5]
+    assert [round(v, 6) for v in node["matrix"][12:15]] == [0.0, 0.0, 0.0]
+    assert [round(v, 6) for v in out["meshes"][node["mesh"]]["positions"][0]] == [-0.5, -0.5, 0.5]
