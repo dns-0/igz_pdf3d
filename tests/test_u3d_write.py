@@ -204,3 +204,48 @@ def test_empty_mesh_is_refused():
     scene["meshes"]["m1"]["faces"] = []
     with pytest.raises(ValueError):
         U.write_u3d(scene)
+
+
+def test_view_and_light_are_written_from_the_camera():
+    scene = sample_scene()
+    scene["camera"] = {"eye": (0.0, 0.0, 50.0), "target": (0.0, 0.0, 0.0), "up": (0.0, 1.0, 0.0),
+                       "fov": 40.0, "perspective": True}
+    doc = U.read_u3d(U.write_u3d(scene))
+    chains = [b for b in doc["blocks"] if b["type"] == "chain"]
+    assert (chains[0]["name"], chains[0]["chain_type"]) == ("DefaultView", 0)
+    view = chains[0]["blocks"][0]
+    assert view["type"] == "view" and view["resource"] == "SceneViewResource"
+    m = view["parents"][0]["matrix"]
+    assert [round(v, 6) for v in m[0:3]] == [1.0, 0.0, 0.0]        # right
+    assert [round(v, 6) for v in m[4:7]] == [0.0, 1.0, 0.0]        # up
+    assert [round(v, 6) for v in m[8:11]] == [0.0, 0.0, 1.0]       # back (camera looks down -z)
+    assert m[12:15] == [0.0, 0.0, 50.0]
+    assert view["attributes"] == 0 and view["near"] == 1.0 and view["projection"] == 40.0
+    assert view["viewport"] == [800.0, 600.0, 0.0, 0.0] and view["backdrops"] == 0 and view["overlays"] == 0
+    light_chain = next(c for c in chains if c["name"] == "DefaultLight")
+    light = light_chain["blocks"][0]
+    assert light["type"] == "light" and light["resource"] == "DefaultPointLight"
+    assert light["parents"][0]["matrix"][12:15] == [0.0, 0.0, 50.0]
+    vres = next(b for b in doc["blocks"] if b["type"] == "view_resource")
+    assert vres == {"type": "view_resource", "name": "SceneViewResource", "passes": [
+        {"root": "", "attributes": 0, "fog_mode": 0, "fog_color": [0.0, 0.0, 0.0, 0.0],
+         "fog_near": 0.0, "fog_far": 1000.0}]}
+    lres = next(b for b in doc["blocks"] if b["type"] == "light_resource")
+    assert lres == {"type": "light_resource", "name": "DefaultPointLight", "attributes": 1,
+                    "light_type": 2, "color": [1.0, 1.0, 1.0, 1.0], "attenuation": [1.0, 0.0, 0.0],
+                    "spot_angle": 180.0, "intensity": 1.0}
+    # The model nodes still follow the view, and no view is written without a camera.
+    assert [c["name"] for c in chains][1:3] == ["Steel", "IfcBeam B-1"]
+    plain = U.read_u3d(U.write_u3d(sample_scene()))
+    assert not any(b["type"] in ("view_resource", "light_resource") for b in plain["blocks"])
+
+
+def test_reads_sample_view_and_light_resources(data_dir):
+    doc = U.read_u3d((data_dir / "box.u3d").read_bytes())
+    view = doc["blocks"][2]["blocks"][0]
+    assert view["type"] == "view" and view["near"] == 1.0 and round(view["projection"], 3) == 34.516
+    assert view["viewport"] == [800.0, 600.0, 0.0, 0.0]
+    vres = next(b for b in doc["blocks"] if b["type"] == "view_resource")
+    assert vres["passes"][0]["fog_far"] == 1000.0
+    lres = next(b for b in doc["blocks"] if b["type"] == "light_resource")
+    assert lres["light_type"] == 2 and lres["spot_angle"] == 180.0

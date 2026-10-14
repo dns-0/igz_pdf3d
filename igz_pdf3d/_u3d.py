@@ -134,10 +134,37 @@ def _parse_block(btype: int, payload: bytes, decls: dict) -> dict:
         name, parents = _read_node_common(r)
         return {"type": "model", "name": name, "parents": parents,
                 "resource": r.string(), "visibility": r.u32()}
-    if btype in (BT_LIGHT, BT_VIEW):
+    if btype == BT_LIGHT:
         name, parents = _read_node_common(r)
-        return {"type": "light" if btype == BT_LIGHT else "view", "name": name,
-                "parents": parents, "resource": r.string()}
+        return {"type": "light", "name": name, "parents": parents, "resource": r.string()}
+    if btype == BT_VIEW:
+        name, parents = _read_node_common(r)
+        out = {"type": "view", "name": name, "parents": parents, "resource": r.string(),
+               "attributes": r.u32(), "near": r.f32(), "far": r.f32()}
+        kind = out["attributes"] & 0x6
+        out["projection"] = [r.f32() for _ in range(3 if kind in (0x2, 0x4) else 1)]
+        if len(out["projection"]) == 1:
+            out["projection"] = out["projection"][0]
+        out["viewport"] = [r.f32() for _ in range(4)]
+        out["backdrops"] = r.u32()
+        for _ in range(out["backdrops"]):
+            r.string(); [r.f32() for _ in range(4)]; r.u32(); r.u32(); r.f32(); r.f32()
+        out["overlays"] = r.u32()
+        for _ in range(out["overlays"]):
+            r.string(); [r.f32() for _ in range(4)]; r.u32(); r.u32(); r.f32(); r.f32()
+        return out
+    if btype == BT_VIEW_RES:
+        out = {"type": "view_resource", "name": r.string(), "passes": []}
+        for _ in range(r.u32()):
+            out["passes"].append({"root": r.string(), "attributes": r.u32(), "fog_mode": r.u32(),
+                                  "fog_color": [r.f32() for _ in range(4)], "fog_near": r.f32(),
+                                  "fog_far": r.f32()})
+        return out
+    if btype == BT_LIGHT_RES:
+        return {"type": "light_resource", "name": r.string(), "attributes": r.u32(),
+                "light_type": r.u8(), "color": [r.f32() for _ in range(4)],
+                "attenuation": [r.f32() for _ in range(3)], "spot_angle": r.f32(),
+                "intensity": r.f32()}
     if btype == BT_CLOD:
         out = {"type": "clod", "name": r.string(), "chain_index": r.u32(),
                "attributes": r.u32(), "faces": r.u32(), "positions": r.u32(),
@@ -294,6 +321,76 @@ def _node_block(btype: int, name: str, parent: str, matrix, resource: str | None
         w.write_string(resource or "")
         w.write_u32(3)                               # front and back faces visible
     return pack_block(btype, w.get_bytes())
+
+
+VIEW_NODE, VIEW_RESOURCE = "DefaultView", "SceneViewResource"
+LIGHT_NODE, LIGHT_RESOURCE = "DefaultLight", "DefaultPointLight"
+_FLT_MAX = 3.4028234663852886e38
+
+
+def _camera_matrix(camera: dict) -> list:
+    """The view node's placement: right, up and back axes then the eye, the
+    same convention as the PDF C2W (the camera looks down its own -z)."""
+    from ._views import _view
+    c2w = _view("", camera["eye"], camera["target"], camera["up"], camera.get("fov") or 45.0)["c2w"]
+    return [c2w[0], c2w[1], c2w[2], 0.0, c2w[3], c2w[4], c2w[5], 0.0,
+            c2w[6], c2w[7], c2w[8], 0.0, c2w[9], c2w[10], c2w[11], 1.0]
+
+
+def _view_node_block(name: str, camera: dict) -> bytes:
+    w = BitWriter()
+    w.write_string(name)
+    w.write_u32(1)
+    w.write_string("")
+    for v in _camera_matrix(camera):
+        w.write_f32(float(v))
+    w.write_string(VIEW_RESOURCE)
+    w.write_u32(0)                                   # three-point perspective, screen-position units
+    w.write_f32(1.0)                                 # near clip
+    w.write_f32(_FLT_MAX)                            # far clip
+    w.write_f32(float(camera.get("fov") or 45.0))    # projection: field of view
+    for v in (800.0, 600.0, 0.0, 0.0):               # viewport width, height, x, y
+        w.write_f32(v)
+    w.write_u32(0)                                   # backdrops
+    w.write_u32(0)                                   # overlays
+    return pack_block(BT_VIEW, w.get_bytes())
+
+
+def _view_resource_block() -> bytes:
+    w = BitWriter()
+    w.write_string(VIEW_RESOURCE)
+    w.write_u32(1)                                   # one render pass
+    w.write_string("")                               # root node: the world
+    w.write_u32(0)                                   # render attributes: no fog
+    w.write_u32(0)                                   # fog mode
+    for v in (0.0, 0.0, 0.0, 0.0, 0.0, 1000.0):      # fog colour, near, far
+        w.write_f32(v)
+    return pack_block(BT_VIEW_RES, w.get_bytes())
+
+
+def _light_node_block(name: str, camera: dict) -> bytes:
+    w = BitWriter()
+    w.write_string(name)
+    w.write_u32(1)
+    w.write_string("")
+    for v in _camera_matrix(camera):
+        w.write_f32(float(v))
+    w.write_string(LIGHT_RESOURCE)
+    return pack_block(BT_LIGHT, w.get_bytes())
+
+
+def _light_resource_block() -> bytes:
+    w = BitWriter()
+    w.write_string(LIGHT_RESOURCE)
+    w.write_u32(1)                                   # attributes: enabled
+    w.write_u8(2)                                    # point light
+    for v in (1.0, 1.0, 1.0, 1.0):                   # colour
+        w.write_f32(v)
+    for v in (1.0, 0.0, 0.0):                        # attenuation: constant only
+        w.write_f32(v)
+    w.write_f32(180.0)                               # spot angle (unused)
+    w.write_f32(1.0)                                 # intensity
+    return pack_block(BT_LIGHT_RES, w.get_bytes())
 
 
 def _shading_block(node_name: str, shader_names) -> bytes:
@@ -490,7 +587,11 @@ def write_u3d(scene: dict) -> bytes:
                           "index": index}
 
     node_namer = _Namer()
+    camera = scene.get("camera")
     out = [header_block(), priority_block(0)]
+    if camera is not None:
+        view_name = node_namer.unique(VIEW_NODE)
+        out.append(chain_block(view_name, CHAIN_NODE, [_view_node_block(view_name, camera)]))
     for layer in scene["layers"]:
         layer_name = node_namer.unique(layer["name"])
         out.append(chain_block(layer_name, CHAIN_NODE,
@@ -502,6 +603,9 @@ def write_u3d(scene: dict) -> bytes:
             out.append(chain_block(node_name, CHAIN_NODE, [
                 _node_block(BT_MODEL, node_name, layer_name, node.get("matrix"), info["name"]),
                 _shading_block(node_name, shaders)]))
+    if camera is not None:
+        light_name = node_namer.unique(LIGHT_NODE)
+        out.append(chain_block(light_name, CHAIN_NODE, [_light_node_block(light_name, camera)]))
     for key, mesh in scene["meshes"].items():
         info = mesh_info[key]
         out.append(chain_block(info["name"], CHAIN_RESOURCE,
@@ -517,6 +621,9 @@ def write_u3d(scene: dict) -> bytes:
                                  bool(tex and tex.get("alpha"))))
     for material, name in zip(materials, material_names):
         out.append(_material_block(name, material))
+    if camera is not None:
+        out.append(_light_resource_block())
+        out.append(_view_resource_block())
     if textures:
         out.append(priority_block(PRIORITY_TEXTURE))
         for key, tex in textures.items():
