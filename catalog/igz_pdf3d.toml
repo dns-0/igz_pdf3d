@@ -13,7 +13,7 @@ repository = "https://github.com/dns-0/igz_pdf3d"
 download = "https://github.com/dns-0/igz_pdf3d/releases/download/v1.0.0/igz_pdf3d.zip"
 sha256 = "FILL-AT-RELEASE"
 ingetrazo = "0.5.8"
-tags = ["export", "collaboration", "bim"]
+tags = ["import-export", "bim", "productivity"]
 screenshot = "igz_pdf3d.png"
 
 [name]
