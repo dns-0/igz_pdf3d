@@ -5,6 +5,7 @@ or one metre (Metric). Z-up to Y-up is ``(x, y, z) -> (x, z, -y)``."""
 from __future__ import annotations
 
 INCHES_PER_METRE = 39.3700787
+IDENTITY = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
 
 # R maps Z-up to Y-up; RT is its inverse (transpose).
 _R = ((1.0, 0.0, 0.0), (0.0, 0.0, 1.0), (0.0, -1.0, 0.0))

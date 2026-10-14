@@ -117,16 +117,20 @@ def test_collect_layers_nodes_instances_and_loose(qapp):
     steel = out["layers"][1]["nodes"]
     assert [n["name"] for n in steel] == ["IfcBeam Beam", "IfcBeam Beam"]
     assert steel[0]["mesh"] == steel[1]["mesh"]                 # instanced
-    assert steel[0]["matrix"][12:15] == [0.0, 0.0, 0.0]
-    assert [round(v, 3) for v in steel[1]["matrix"][12:15]] == [78.74, 0.0, 0.0]
+    centre = [216.535, 19.685, -19.685]                          # of the whole scene, in inches
+    assert [round(v, 3) for v in steel[0]["matrix"][12:15]] == [round(-c, 3) for c in centre]
+    assert [round(v, 3) for v in steel[1]["matrix"][12:15]] == [round(78.74 - centre[0], 3), -19.685, 19.685]
     loose = out["layers"][0]["nodes"]
-    assert loose[0]["name"] == C.LOOSE_NAME and loose[0]["matrix"] is None
+    assert loose[0]["name"] == C.LOOSE_NAME
+    assert [round(v, 3) for v in loose[0]["matrix"][12:15]] == [round(-c, 3) for c in centre]
+    assert loose[0]["matrix"][:12] == [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+    assert [round(v, 3) for v in out["offset"]] == centre
     mesh = out["meshes"][steel[0]["mesh"]]
     assert len(mesh["positions"]) == 8 and len(mesh["faces"]) == 12
     assert out["counts"] == {"groups": 2, "faces": 18}            # 6 per box, plus the loose box
     lo, hi = out["bbox"]
-    assert [round(v, 2) for v in lo] == [0.0, 0.0, -39.37]
-    assert [round(v, 2) for v in hi] == [433.07, 39.37, 0.0]
+    assert [round(v, 2) for v in lo] == [-216.54, -19.69, -19.69]
+    assert [round(v, 2) for v in hi] == [216.54, 19.69, 19.69]
 
 
 def test_selected_group_exports_hidden_children(qapp):
@@ -181,7 +185,7 @@ def test_collect_textures_bake_per_placement(qapp, tmp_path):
     out = C.collect(scene, "m")
     nodes = out["layers"][0]["nodes"]
     assert nodes[0]["mesh"] != nodes[1]["mesh"]                  # baked, not instanced
-    assert nodes[0]["matrix"] is None and nodes[1]["matrix"] is None
+    assert nodes[0]["matrix"] == nodes[1]["matrix"]              # both carry only the recentring shift
     m0, m1 = out["meshes"][nodes[0]["mesh"]], out["meshes"][nodes[1]["mesh"]]
     assert [round(v, 3) for v in m1["positions"][1]] == [round(v, 3) for v in (m0["positions"][1][0] + 5.0, m0["positions"][1][1], m0["positions"][1][2])]
     assert all(f[3] is not None for f in m0["faces"])
@@ -232,8 +236,10 @@ def test_collect_camera_and_poster(qapp):
     vp.camera.pitch = 0.0
     out = C.collect(scene, "in", viewport=vp, poster_size=(64, 48))
     cam = out["camera"]
-    assert [round(v, 2) for v in cam["target"]] == [39.37, 118.11, -78.74]
-    assert [round(v, 2) for v in cam["eye"]] == [round(11.0 * 39.3700787, 2), 118.11, -78.74]
+    ox, oy, oz = out["offset"]                                   # the unit box's centre, in inches
+    assert [round(v, 2) for v in (ox, oy, oz)] == [19.69, 19.69, -19.69]
+    assert [round(v, 2) for v in cam["target"]] == [round(39.37 - ox, 2), round(118.11 - oy, 2), round(-78.74 - oz, 2)]
+    assert [round(v, 2) for v in cam["eye"]] == [round(11.0 * 39.3700787 - ox, 2), round(118.11 - oy, 2), round(-78.74 - oz, 2)]
     assert cam["up"] == (0.0, 1.0, 0.0)
     assert cam["fov"] == 45.0 and cam["perspective"] is True
     assert out["poster"][:2] == b"\xff\xd8" and out["poster_size"] == (64, 48)
@@ -266,3 +272,14 @@ def test_collect_skips_nested_child_on_hidden_layer(qapp):
     out = C.collect(scene, "m")
     assert [ly["name"] for ly in out["layers"]] == ["Layer 0"]
     assert [n["name"] for n in out["layers"][0]["nodes"]] == ["Parent"]
+
+
+def test_collect_recentres_scene_far_from_origin(qapp):
+    scene = Scene()
+    scene.groups.append(box_group("Far", (100.0, 200.0, 300.0)))
+    out = C.collect(scene, "m")
+    lo, hi = out["bbox"]
+    assert [round(v, 6) for v in lo] == [-0.5, -0.5, -0.5] and [round(v, 6) for v in hi] == [0.5, 0.5, 0.5]
+    assert [round(v, 6) for v in out["offset"]] == [100.5, 300.5, -200.5]
+    node = out["layers"][0]["nodes"][0]
+    assert [round(v, 6) for v in node["matrix"][12:15]] == [-100.5, -300.5, 200.5]

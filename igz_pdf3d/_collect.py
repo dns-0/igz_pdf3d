@@ -373,10 +373,27 @@ def collect(scene, units: str, viewport=None, poster_size=None) -> dict:
                 x, y, z = _space.apply(node["matrix"], p)
                 lo[0], lo[1], lo[2] = min(lo[0], x), min(lo[1], y), min(lo[2], z)
                 hi[0], hi[1], hi[2] = max(hi[0], x), max(hi[1], y), max(hi[2], z)
+    # Recentre the scene at the origin: viewers orbit badly around a model
+    # that sits hundreds of feet from (0, 0, 0). The shift goes into the node
+    # matrices and the camera; measurements are unaffected.
+    offset = tuple((lo[i] + hi[i]) / 2.0 for i in range(3))
+    for ly in layers.values():
+        for node in ly["nodes"]:
+            m = list(node["matrix"]) if node["matrix"] is not None else list(_space.IDENTITY)
+            m[12] -= offset[0]
+            m[13] -= offset[1]
+            m[14] -= offset[2]
+            node["matrix"] = m
+    lo = [lo[i] - offset[i] for i in range(3)]
+    hi = [hi[i] - offset[i] for i in range(3)]
+    camera = _camera(viewport, scale)
+    if camera is not None:
+        camera["eye"] = tuple(camera["eye"][i] - offset[i] for i in range(3))
+        camera["target"] = tuple(camera["target"][i] - offset[i] for i in range(3))
     poster, poster_size_out = _poster(viewport, poster_size)
     return {"units": units, "scale": scale,
             "layers": [ly for ly in layers.values() if ly["nodes"]],
             "meshes": meshes, "materials": materials.finish(), "textures": materials.textures,
-            "camera": _camera(viewport, scale), "bbox": (tuple(lo), tuple(hi)),
+            "camera": camera, "bbox": (tuple(lo), tuple(hi)), "offset": offset,
             "poster": poster, "poster_size": poster_size_out,
             "fallbacks": list(materials.fallbacks), "counts": counts}

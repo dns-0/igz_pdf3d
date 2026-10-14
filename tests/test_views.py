@@ -34,7 +34,15 @@ def test_exported_view_matches_camera():
     assert [round(x, 6) for x in up] == [0.0, 1.0, 0.0]
     assert [round(x, 6) for x in back] == [0.0, 0.0, 1.0]
     assert pos == [0.0, 0.0, 50.0]
-    assert v["co"] == 50.0 and v["fov"] == 40.0
+    # The pivot is the point of the sight line nearest the box centre (5, 2, -10): z = -10, 60 away.
+    assert v["co"] == 60.0 and v["fov"] == 40.0
+
+
+def test_exported_view_pivot_falls_back_when_model_is_behind_camera():
+    cam = {"eye": (0.0, 0.0, -50.0), "target": (0.0, 0.0, -100.0), "up": (0.0, 1.0, 0.0),
+           "fov": 40.0, "perspective": True}
+    v = W.make_views(cam, BBOX)[0]
+    assert v["co"] == 50.0
 
 
 def test_axes_are_orthonormal_for_every_view():

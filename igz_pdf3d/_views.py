@@ -57,8 +57,15 @@ def make_views(camera, bbox) -> list:
     distance = radius / math.tan(math.radians(AXIS_FOV_DEG / 2.0)) * _FIT_MARGIN
     views = []
     if camera is not None:
-        views.append(_view("Exported view", camera["eye"], camera["target"], camera["up"],
-                           camera.get("fov") or 45.0))
+        # Pivot on the model: the point of the sight line nearest the box
+        # centre, so orbiting swings the model and not a spot in the air.
+        eye, target = camera["eye"], camera["target"]
+        forward = _norm(_sub(target, eye))
+        if forward is not None:
+            along = sum((centre[i] - eye[i]) * forward[i] for i in range(3))
+            if along > 1e-6:
+                target = tuple(eye[i] + forward[i] * along for i in range(3))
+        views.append(_view("Exported view", eye, target, camera["up"], camera.get("fov") or 45.0))
     iso = _norm((1.0, 1.0, 1.0))
     axes = [("Iso", iso, (0.0, 1.0, 0.0)),
             ("Top", (0.0, 1.0, 0.0), (0.0, 0.0, -1.0)),
