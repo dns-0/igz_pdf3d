@@ -25,7 +25,8 @@ from ._views import make_views
 log = logging.getLogger("ingetrazo.plugins.igz_pdf3d")
 
 UNITS = [("Imperial (inches)", "in", "inches"), ("Metric (metres)", "m", "metres")]
-PAGES = [("Letter landscape", "letter"), ("A4 landscape", "a4"), ("Tabloid 11x17 landscape", "tabloid")]
+PAGES = [("Letter landscape", "letter"), ("A4 landscape", "a4"), ("Tabloid 11x17 landscape", "tabloid"),
+         ("Arch D 24x36 landscape", "archd")]
 POSTER_WIDTH_PX = 1600
 UNTITLED = "Untitled model"
 

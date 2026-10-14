@@ -96,8 +96,10 @@ def test_metric_and_a4_options(qapp, tmp_path):
     assert (opts["units"], opts["units_label"], opts["page"], opts["note"]) == ("m", "metres", "a4", "Issued for review")
     d.page.setCurrentIndex(2)
     assert d.options()["page"] == "tabloid"
+    d.page.setCurrentIndex(3)
+    assert d.options()["page"] == "archd"
     assert [d.page.itemText(i) for i in range(d.page.count())] == [
-        "Letter landscape", "A4 landscape", "Tabloid 11x17 landscape"]
+        "Letter landscape", "A4 landscape", "Tabloid 11x17 landscape", "Arch D 24x36 landscape"]
 
 
 def test_export_writes_a_3d_pdf(qapp, tmp_path):
