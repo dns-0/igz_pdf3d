@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import zlib
 
-PAGE_SIZES = {"letter": (792.0, 612.0), "a4": (841.89, 595.28)}
+PAGE_SIZES = {"letter": (792.0, 612.0), "a4": (841.89, 595.28), "tabloid": (1224.0, 792.0)}
 MARGIN = 36.0
 STRIP = 72.0
 GAP = 6.0

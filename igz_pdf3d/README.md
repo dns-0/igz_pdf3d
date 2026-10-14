@@ -2,7 +2,7 @@
 
 Select what you want to share (or nothing, for the whole visible model), click
 the **3D PDF** toolbar button (or Extensions ▸ Export 3D PDF…), set a title
-and a note, and save. The one-page PDF opens in Adobe Acrobat Reader and
+and a note, pick Letter, A4 or Tabloid (11x17) landscape, and save. The one-page PDF opens in Adobe Acrobat Reader and
 Bluebeam Revu as an interactive 3D model with a model tree by layer and
 object, the document's materials and textures, and named views (the exported
 view plus Iso, Top, Front, Back, Left, Right). Other viewers show a snapshot

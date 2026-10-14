@@ -33,7 +33,7 @@ def _annot(reader):
 
 
 def test_page_sizes():
-    for page, (w, h) in (("letter", (792.0, 612.0)), ("a4", (841.89, 595.28))):
+    for page, (w, h) in (("letter", (792.0, 612.0)), ("tabloid", (1224.0, 792.0)), ("a4", (841.89, 595.28))):
         data = P.write_pdf({**OPTIONS, "page": page}, U3D, VIEWS, JPEG, (64, 48))
         reader = _read(data)
         assert len(reader.pages) == 1
@@ -45,6 +45,8 @@ def test_annotation_rect_leaves_room_for_the_strip():
     x0, y0, x1, y1 = P.annotation_rect("letter")
     assert (x0, y0) == (36.0, 36.0) and x1 == 792.0 - 36.0
     assert y1 < 612.0 - 36.0 - 72.0 and y1 > 400
+    x0, y0, x1, y1 = P.annotation_rect("tabloid")
+    assert x1 == 1224.0 - 36.0 and y1 == 792.0 - 36.0 - 72.0 - 6.0
 
 
 def test_3d_annotation_structure():
