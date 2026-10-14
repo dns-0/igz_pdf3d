@@ -238,8 +238,9 @@ def test_collect_camera_and_poster(qapp):
     cam = out["camera"]
     ox, oy, oz = out["offset"]                                   # the unit box's centre, in inches
     assert [round(v, 2) for v in (ox, oy, oz)] == [19.69, 19.69, -19.69]
-    assert [round(v, 2) for v in cam["target"]] == [round(39.37 - ox, 2), round(118.11 - oy, 2), round(-78.74 - oz, 2)]
-    assert [round(v, 2) for v in cam["eye"]] == [round(11.0 * 39.3700787 - ox, 2), round(118.11 - oy, 2), round(-78.74 - oz, 2)]
+    k = 39.3700787
+    assert [round(v, 2) for v in cam["target"]] == [round(1 * k - ox, 2), round(3 * k - oy, 2), round(-2 * k - oz, 2)]
+    assert [round(v, 2) for v in cam["eye"]] == [round(11 * k - ox, 2), round(3 * k - oy, 2), round(-2 * k - oz, 2)]
     assert cam["up"] == (0.0, 1.0, 0.0)
     assert cam["fov"] == 45.0 and cam["perspective"] is True
     assert out["poster"][:2] == b"\xff\xd8" and out["poster_size"] == (64, 48)
