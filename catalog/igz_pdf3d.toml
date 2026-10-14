@@ -1,0 +1,32 @@
+# Entry for the IngeTrazo extension catalog
+# (https://github.com/ingelibre/ingetrazo-extensions), submitted as
+# extensions/igz_pdf3d.toml. The `sha256` is the fingerprint of the exact
+# archive uploaded as the GitHub Release asset named igz_pdf3d.zip:
+#   certutil -hashfile dist\igz_pdf3d.zip SHA256
+
+id = "igz_pdf3d"
+version = "1.0.0"
+author = "David Songer"
+author_url = "https://github.com/dns-0"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/dns-0/igz_pdf3d"
+download = "https://github.com/dns-0/igz_pdf3d/releases/download/v1.0.0/igz_pdf3d.zip"
+sha256 = "FILL-AT-RELEASE"
+ingetrazo = "0.5.8"
+tags = ["export", "collaboration", "bim"]
+screenshot = "igz_pdf3d.png"
+
+[name]
+es = "Exportar PDF 3D"
+en = "3D PDF export"
+pt = "Exportar PDF 3D"
+
+[summary]
+es = "Exporta la selección o el modelo visible como PDF 3D interactivo (U3D) para Acrobat Reader y Bluebeam Revu: árbol por capas y objetos, materiales y texturas, vistas con nombre, imagen de respaldo. Sin dependencias."
+en = "Exports the selection or the visible model as an interactive 3D PDF (U3D) for Acrobat Reader and Bluebeam Revu: model tree by layer and object, materials and textures, named views, snapshot fallback. No dependencies."
+pt = "Exporta a seleção ou o modelo visível como PDF 3D interativo (U3D) para Acrobat Reader e Bluebeam Revu: árvore por camadas e objetos, materiais e texturas, vistas nomeadas, imagem de reserva. Sem dependências."
+
+[description]
+es = "Un botón en la barra de herramientas (PDF 3D) y una entrada en Extensiones ▸ Exportar PDF 3D… Seleccione lo que quiera compartir, o nada para todo el modelo visible, escriba un título y una nota y guarde. El PDF de una página se abre en Adobe Acrobat Reader y Bluebeam Revu como modelo 3D interactivo: árbol de modelo por capas y objetos (con la clase IFC), materiales y texturas del documento, vista exportada más Iso, Planta, Frente, Fondo, Izquierda y Derecha, y la captura de la vista como imagen para los visores sin 3D. Unidades: pulgadas (una unidad U3D = una pulgada) o metros; ajuste la herramienta de medir del visor a la misma unidad. Escrito en Python puro, sin dependencias; el codificador U3D es una adaptación de la biblioteca de referencia U3D (Apache-2.0)."
+en = "A toolbar button (3D PDF) and an Extensions ▸ Export 3D PDF… entry. Select what you want to share, or nothing for the whole visible model, type a title and a note, and save. The one-page PDF opens in Adobe Acrobat Reader and Bluebeam Revu as an interactive 3D model: a model tree by layer and object (with the IFC class), the document's materials and textures, the exported view plus Iso, Top, Front, Back, Left and Right, and the viewport snapshot as the image shown by viewers without 3D. Units: inches (one U3D unit = one inch) or metres; set the viewer's measure tool to the same unit. Pure Python, no dependencies; the U3D encoder is a port of the U3D reference library (Apache-2.0)."
+pt = "Um botão na barra de ferramentas (PDF 3D) e uma entrada em Extensões ▸ Exportar PDF 3D… Selecione o que quer partilhar, ou nada para todo o modelo visível, escreva um título e uma nota e guarde. O PDF de uma página abre no Adobe Acrobat Reader e no Bluebeam Revu como modelo 3D interativo: árvore do modelo por camadas e objetos (com a classe IFC), materiais e texturas do documento, a vista exportada mais Iso, Topo, Frente, Trás, Esquerda e Direita, e a captura da vista como imagem para visualizadores sem 3D. Unidades: polegadas (uma unidade U3D = uma polegada) ou metros; ajuste a ferramenta de medição do visualizador à mesma unidade. Python puro, sem dependências; o codificador U3D é uma adaptação da biblioteca de referência U3D (Apache-2.0)."
