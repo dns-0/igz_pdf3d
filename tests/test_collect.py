@@ -291,3 +291,38 @@ def test_collect_recentres_scene_far_from_origin(qapp):
     node = out["layers"][0]["nodes"][0]
     assert [round(v, 6) for v in node["matrix"][12:15]] == [0.0, 0.0, 0.0]
     assert [round(v, 6) for v in out["meshes"][node["mesh"]]["positions"][0]] == [-0.5, -0.5, 0.5]
+
+
+def test_poster_renders_with_a_style_override_so_axes_are_left_out(qapp):
+    """The viewport draws its world axes and guides only when no style
+    override is set; the snapshot must set one for the render and restore
+    the viewport afterwards."""
+    scene = Scene()
+    scene.groups.append(box_group("A"))
+
+    class StyledViewport(FakeViewport):
+        def __init__(self):
+            super().__init__(QImage(32, 24, QImage.Format_RGB888))
+            self.scene = scene
+            self.style_override = None
+            self.seen = []
+
+        def render_image(self, w, h=None):
+            self.seen.append(self.style_override)
+            return super().render_image(w, h)
+
+    vp = StyledViewport()
+    out = C.collect(scene, "in", viewport=vp, poster_size=(32, None))
+    assert out["poster"] is not None
+    assert vp.seen and vp.seen[0] is not None            # override active during the render
+    assert vp.style_override is None                     # restored afterwards
+
+
+def test_poster_keeps_an_existing_style_override(qapp):
+    scene = Scene()
+    scene.groups.append(box_group("A"))
+    vp = FakeViewport(QImage(32, 24, QImage.Format_RGB888))
+    vp.scene = scene
+    vp.style_override = "composer-style"
+    C.collect(scene, "in", viewport=vp, poster_size=(32, None))
+    assert vp.style_override == "composer-style"

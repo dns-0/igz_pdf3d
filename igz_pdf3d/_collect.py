@@ -295,10 +295,27 @@ def _poster(viewport, size):
         return None, None
     try:
         from PySide6.QtCore import QBuffer, QIODevice
-        if size[1] is None:                          # height follows the viewport's aspect
-            img = viewport.render_image(int(size[0]))
-        else:
-            img = viewport.render_image(int(size[0]), int(size[1]))
+        # The viewport draws its world axes and guides only when no style
+        # override is set (that is how a styled sheet is rendered): set the
+        # scene's own style as the override for the snapshot and restore it.
+        previous = getattr(viewport, "style_override", None)
+        installed = False
+        if previous is None and hasattr(viewport, "style_override"):
+            try:
+                from core.style import Style
+                scene = getattr(viewport, "scene", None)
+                viewport.style_override = getattr(scene, "display_style", None) or Style()
+                installed = True
+            except Exception:  # noqa: BLE001 — no style module: keep the axes
+                log.debug("igz_pdf3d: style override unavailable; snapshot keeps the axes")
+        try:
+            if size[1] is None:                      # height follows the viewport's aspect
+                img = viewport.render_image(int(size[0]))
+            else:
+                img = viewport.render_image(int(size[0]), int(size[1]))
+        finally:
+            if installed:
+                viewport.style_override = previous
         if img is None or img.isNull():
             return None, None
         buf = QBuffer()

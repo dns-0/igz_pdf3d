@@ -5,12 +5,12 @@
 #   certutil -hashfile dist\igz_pdf3d.zip SHA256
 
 id = "igz_pdf3d"
-version = "1.0.0"
+version = "1.0.1"
 author = "David Songer"
 author_url = "https://github.com/dns-0"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/dns-0/igz_pdf3d"
-download = "https://github.com/dns-0/igz_pdf3d/releases/download/v1.0.0/igz_pdf3d.zip"
+download = "https://github.com/dns-0/igz_pdf3d/releases/download/v1.0.1/igz_pdf3d.zip"
 sha256 = "1a980768f5c63752d826809d041b89688418c67f72027656cb9fbe24442f710b"
 ingetrazo = "0.5.8"
 tags = ["import-export", "bim", "productivity"]
