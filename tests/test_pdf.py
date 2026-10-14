@@ -51,7 +51,7 @@ def test_3d_annotation_structure():
     data = P.write_pdf(OPTIONS, U3D, VIEWS, JPEG, (64, 48))
     reader = _read(data)
     a = _annot(reader)
-    assert a["/Subtype"] == "/3D" and bool(a["/3DI"]) is True
+    assert a["/Subtype"] == "/3D" and a["/3DI"].value is True
     assert [float(v) for v in a["/Rect"]] == list(P.annotation_rect("letter"))
     act = _resolve(a["/3DA"])
     assert act["/A"] == "/PO" and act["/D"] == "/PC" and act["/AIS"] == "/I"
@@ -132,3 +132,19 @@ def test_xref_offsets_are_exact():
     for i in range(1, count):
         offset = int(lines[2 + i][:10])
         assert data[offset:].startswith(f"{i} 0 obj".encode())
+
+
+def test_poster_is_letterboxed_preserving_aspect():
+    data = P.write_pdf(OPTIONS, U3D, VIEWS, JPEG, (64, 48))
+    a = _annot(_read(data))
+    form = _resolve(_resolve(a["/AP"])["/N"])
+    content = form.get_data()
+    # 64x48 into 720x462: scale 9.625 -> 616x462, centred horizontally at x=52
+    assert b"616 0 0 462 52 0 cm /Im1 Do" in content
+    assert b"1 g 0 0 720 462 re f" in content
+
+
+def test_navigation_panel_opens_on_activation():
+    data = P.write_pdf(OPTIONS, U3D, VIEWS, None, None)
+    act = _resolve(_annot(_read(data))["/3DA"])
+    assert act["/NP"].value is True

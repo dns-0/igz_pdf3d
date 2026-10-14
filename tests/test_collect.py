@@ -252,3 +252,17 @@ def test_collect_group_without_faces_is_skipped(qapp):
     scene.groups += [empty, box_group("A")]
     out = C.collect(scene, "in")
     assert [n["name"] for n in out["layers"][0]["nodes"]] == ["A"]
+
+
+def test_collect_skips_nested_child_on_hidden_layer(qapp):
+    scene = Scene()
+    scene.layers.append(Layer("Scaffolding", visible=False))
+    parent = box_group("Parent")
+    parent.xform = translate(0, 0, 0)
+    child = box_group("Scaffold", (3, 0, 0), layer="Scaffolding")
+    child.xform = translate(0, 0, 0)
+    parent.children.append(child)
+    scene.groups.append(parent)
+    out = C.collect(scene, "m")
+    assert [ly["name"] for ly in out["layers"]] == ["Layer 0"]
+    assert [n["name"] for n in out["layers"][0]["nodes"]] == ["Parent"]

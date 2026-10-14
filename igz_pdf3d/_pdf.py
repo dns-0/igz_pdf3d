@@ -137,7 +137,13 @@ def write_pdf(options: dict, u3d_bytes: bytes, views, poster=None, poster_size=N
                            + str(ph).encode() + b" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode",
                            bytes(poster))
         resources = f"<< /XObject << /Im1 {image} 0 R >> >>".encode()
-        draw = (b"q " + _num(aw).encode() + b" 0 0 " + _num(ah).encode() + b" 0 0 cm /Im1 Do Q")
+        # Letterbox: keep the snapshot's aspect, centre it on a white field.
+        scale = min(aw / pw, ah / ph)
+        dw, dh = pw * scale, ph * scale
+        ox, oy = (aw - dw) / 2.0, (ah - dh) / 2.0
+        draw = (b"1 g 0 0 " + _num(aw).encode() + b" " + _num(ah).encode() + b" re f q "
+                + _num(dw).encode() + b" 0 0 " + _num(dh).encode() + b" "
+                + _num(ox).encode() + b" " + _num(oy).encode() + b" cm /Im1 Do Q")
     else:
         draw = (_num(POSTER_GREY).encode() + b" g 0 0 " + _num(aw).encode() + b" " + _num(ah).encode()
                 + b" re f")
@@ -149,7 +155,7 @@ def write_pdf(options: dict, u3d_bytes: bytes, views, poster=None, poster_size=N
         + b" /Rect [" + b" ".join(_num(v).encode() for v in (x0, y0, x1, y1)) + b"]"
         + b" /Contents " + _utext(options.get("title") or "3D model") + b" /NM (igz_pdf3d)"
         + b" /3DD " + f"{stream3d} 0 R".encode() + b" /3DV " + f"{view_refs[0]} 0 R".encode()
-        + b" /3DA << /A /PO /AIS /I /D /PC /DIS /U /TB true /NP false >> /3DI true"
+        + b" /3DA << /A /PO /AIS /I /D /PC /DIS /U /TB true /NP true >> /3DI true"
         + b" /AP << /N " + f"{appearance} 0 R".encode() + b" >> >>")
 
     doc.set(page_obj, b"<< /Type /Page /Parent " + f"{pages} 0 R".encode()

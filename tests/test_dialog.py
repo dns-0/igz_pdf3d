@@ -143,3 +143,18 @@ def test_document_path_helper(tmp_path):
     assert D.document_path(FakeApp(str(tmp_path / "x.igz"))) == str(tmp_path / "x.igz")
     assert D.document_path(FakeApp(None)) is None
     assert D.document_path(object()) is None
+
+
+def test_poster_is_rendered_at_the_viewport_aspect(qapp, tmp_path):
+    app = FakeApp(str(tmp_path / "job.igz"), _scene_with_box())
+    calls = []
+    original = app.viewport.render_image
+
+    def record(w, h=None):
+        calls.append((w, h))
+        return original(w, h)
+    app.viewport.render_image = record
+    d = D.ExportDialog(app)
+    d.start_export()
+    _wait(d, qapp)
+    assert calls == [(D.POSTER_WIDTH_PX, None)]

@@ -295,7 +295,10 @@ def _poster(viewport, size):
         return None, None
     try:
         from PySide6.QtCore import QBuffer, QIODevice
-        img = viewport.render_image(int(size[0]), int(size[1]))
+        if size[1] is None:                          # height follows the viewport's aspect
+            img = viewport.render_image(int(size[0]))
+        else:
+            img = viewport.render_image(int(size[0]), int(size[1]))
         if img is None or img.isNull():
             return None, None
         buf = QBuffer()
@@ -325,7 +328,7 @@ def collect(scene, units: str, viewport=None, poster_size=None) -> dict:
     baked_count = 0
     for top in groups:
         for g, m in _iter_placements(top):
-            if g is not top and whole and getattr(g, "hidden", False):
+            if g is not top and whole and not scene.entity_visible(g):
                 continue
             if getattr(g, "billboard", False):
                 continue

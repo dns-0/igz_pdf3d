@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (QComboBox, QDialog, QFileDialog, QFormLayout, QHB
                                QLineEdit, QProgressBar, QPushButton, QVBoxLayout, QWidget)
 
 from ._collect import NothingToExport, collect, describe_selection
-from ._pdf import annotation_rect, write_pdf
+from ._pdf import write_pdf
 from ._u3d import write_u3d
 from ._views import make_views
 
@@ -179,8 +179,7 @@ class ExportDialog(QDialog):
             return
         self._set_busy(True, "Collecting geometry…")
         try:
-            x0, y0, x1, y1 = annotation_rect(options["page"])
-            poster_size = (POSTER_WIDTH_PX, max(int(round(POSTER_WIDTH_PX * (y1 - y0) / (x1 - x0))), 64))
+            poster_size = (POSTER_WIDTH_PX, None)     # the PDF letterboxes the snapshot
             data = collect(self.app.scene, options["units"], getattr(self.app, "viewport", None),
                            poster_size)
         except NothingToExport as ex:
