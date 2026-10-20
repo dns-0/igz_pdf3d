@@ -16,3 +16,7 @@ Tick each line with the date when checked in IngeTrazo 0.5.8, Acrobat DC and Blu
 - [ ] 10. IngeTrazo's log folder shows no igz_pdf3d tracebacks.
 
 Early check available before step 3: trial/trial_cube.pdf (two cubes and a textured panel, generated during planning).
+
+## igz_pdf3d 1.0.2
+
+- [x] (2026-10-20, David) The threaded pipe example re-exported with 1.0.2 rotates smoothly in Acrobat DC. In 1.0.1 it swung unpredictably: the C2W's third column was the back axis, so Acrobat orbited a point behind the camera.
