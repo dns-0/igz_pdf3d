@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Units and axes: IngeTrazo models in Z-up metres; the PDF viewer expects
-Y-up, and the stakeholder wants inches. One U3D unit is one inch (Imperial)
-or one metre (Metric). Z-up to Y-up is ``(x, y, z) -> (x, z, -y)``."""
+"""Units and axes: IngeTrazo models in Z-up metres and the stakeholder wants
+inches. One U3D unit is one inch (Imperial) or one metre (Metric).
+
+The axes are kept as they are: Acrobat treats Z as up (its Spin tool turns
+the model about Z, and its Walk tool keeps Z vertical), so a Z-up model
+orbits the way it does in IngeTrazo. An earlier version turned the model
+Y-up, which made those tools tumble it."""
 from __future__ import annotations
 
 INCHES_PER_METRE = 39.3700787
 IDENTITY = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-
-# R maps Z-up to Y-up; RT is its inverse (transpose).
-_R = ((1.0, 0.0, 0.0), (0.0, 0.0, 1.0), (0.0, -1.0, 0.0))
-_RT = ((1.0, 0.0, 0.0), (0.0, 0.0, -1.0), (0.0, 1.0, 0.0))
 
 
 def scale_for(units: str) -> float:
@@ -18,24 +18,18 @@ def scale_for(units: str) -> float:
 
 def point(p, scale: float) -> tuple:
     x, y, z = float(p[0]), float(p[1]), float(p[2])
-    return (x * scale, z * scale, -y * scale)
+    return (x * scale, y * scale, z * scale)
 
 
 def direction(v) -> tuple:
-    return (float(v[0]), float(v[2]), -float(v[1]))
-
-
-def _mul3(a, b):
-    return tuple(tuple(sum(a[r][k] * b[k][c] for k in range(3)) for c in range(3)) for r in range(3))
+    return (float(v[0]), float(v[1]), float(v[2]))
 
 
 def matrix(rows, scale: float) -> list:
     """``rows``: a 4×4 matrix as four rows (column-vector convention, the way
     ``QMatrix4x4.row(i)`` reads it). Returns the 16 floats U3D stores: the
-    converted linear part ``R·A·Rᵀ`` column by column, then the converted,
-    scaled translation, then 1."""
-    a = tuple(tuple(float(rows[r][c]) for c in range(3)) for r in range(3))
-    n = _mul3(_mul3(_R, a), _RT)
+    linear part column by column, then the scaled translation, then 1."""
+    n = tuple(tuple(float(rows[r][c]) for c in range(3)) for r in range(3))
     t = point((rows[0][3], rows[1][3], rows[2][3]), scale)
     out = []
     for c in range(3):

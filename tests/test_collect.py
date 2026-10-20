@@ -117,7 +117,7 @@ def test_collect_layers_nodes_instances_and_loose(qapp):
     steel = out["layers"][1]["nodes"]
     assert [n["name"] for n in steel] == ["IfcBeam Beam", "IfcBeam Beam"]
     assert steel[0]["mesh"] == steel[1]["mesh"]                 # instanced
-    centre = [216.535, 19.685, -19.685]                          # of the whole scene, in inches
+    centre = [216.535, 19.685, 19.685]                          # of the whole scene, in inches
     # Every node's origin is its own part's centre, relative to the scene centre.
     assert [round(v, 3) for v in steel[0]["matrix"][12:15]] == [round(19.685 - centre[0], 3), 0.0, 0.0]
     assert [round(v, 3) for v in steel[1]["matrix"][12:15]] == [round(78.74 + 19.685 - centre[0], 3), 0.0, 0.0]
@@ -243,11 +243,11 @@ def test_collect_camera_and_poster(qapp):
     out = C.collect(scene, "in", viewport=vp, poster_size=(64, 48))
     cam = out["camera"]
     ox, oy, oz = out["offset"]                                   # the unit box's centre, in inches
-    assert [round(v, 2) for v in (ox, oy, oz)] == [19.69, 19.69, -19.69]
+    assert [round(v, 2) for v in (ox, oy, oz)] == [19.69, 19.69, 19.69]
     k = 39.3700787
-    assert [round(v, 2) for v in cam["target"]] == [round(1 * k - ox, 2), round(3 * k - oy, 2), round(-2 * k - oz, 2)]
-    assert [round(v, 2) for v in cam["eye"]] == [round(11 * k - ox, 2), round(3 * k - oy, 2), round(-2 * k - oz, 2)]
-    assert cam["up"] == (0.0, 1.0, 0.0)
+    assert [round(v, 2) for v in cam["target"]] == [round(1 * k - ox, 2), round(2 * k - oy, 2), round(3 * k - oz, 2)]
+    assert [round(v, 2) for v in cam["eye"]] == [round(11 * k - ox, 2), round(2 * k - oy, 2), round(3 * k - oz, 2)]
+    assert cam["up"] == (0.0, 0.0, 1.0)                         # Z stays up
     assert cam["fov"] == 45.0 and cam["perspective"] is True
     assert out["poster"][:2] == b"\xff\xd8" and out["poster_size"] == (64, 48)
 
@@ -287,10 +287,10 @@ def test_collect_recentres_scene_far_from_origin(qapp):
     out = C.collect(scene, "m")
     lo, hi = out["bbox"]
     assert [round(v, 6) for v in lo] == [-0.5, -0.5, -0.5] and [round(v, 6) for v in hi] == [0.5, 0.5, 0.5]
-    assert [round(v, 6) for v in out["offset"]] == [100.5, 300.5, -200.5]
+    assert [round(v, 6) for v in out["offset"]] == [100.5, 200.5, 300.5]
     node = out["layers"][0]["nodes"][0]
     assert [round(v, 6) for v in node["matrix"][12:15]] == [0.0, 0.0, 0.0]
-    assert [round(v, 6) for v in out["meshes"][node["mesh"]]["positions"][0]] == [-0.5, -0.5, 0.5]
+    assert [round(v, 6) for v in out["meshes"][node["mesh"]]["positions"][0]] == [-0.5, -0.5, -0.5]
 
 
 def test_poster_renders_with_a_style_override_so_axes_are_left_out(qapp):

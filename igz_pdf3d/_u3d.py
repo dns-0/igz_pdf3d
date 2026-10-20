@@ -329,12 +329,13 @@ _FLT_MAX = 3.4028234663852886e38
 
 
 def _camera_matrix(camera: dict) -> list:
-    """The view node's placement: right, up and back axes then the eye, the
-    same convention as the PDF C2W (the camera looks down its own -z)."""
-    from ._views import _view
-    c2w = _view("", camera["eye"], camera["target"], camera["up"], camera.get("fov") or 45.0)["c2w"]
-    return [c2w[0], c2w[1], c2w[2], 0.0, c2w[3], c2w[4], c2w[5], 0.0,
-            c2w[6], c2w[7], c2w[8], 0.0, c2w[9], c2w[10], c2w[11], 1.0]
+    """The view node's placement: right, up and back axes then the eye (a
+    U3D view looks down its own -z, unlike the PDF C2W)."""
+    from ._views import camera_axes
+    right, up, back = camera_axes(camera["eye"], camera["target"], camera["up"])
+    eye = camera["eye"]
+    return [right[0], right[1], right[2], 0.0, up[0], up[1], up[2], 0.0,
+            back[0], back[1], back[2], 0.0, float(eye[0]), float(eye[1]), float(eye[2]), 1.0]
 
 
 def _view_node_block(name: str, camera: dict) -> bytes:

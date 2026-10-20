@@ -1,10 +1,18 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """PDF 3D views: the camera the user exported from and six axis views framed
-around the model. Everything is in U3D space (Y-up, scaled).
+around the model. Everything is in U3D space (Z-up, scaled).
 
-A view's C2W is the camera's right, up and back axes followed by its position
-(PDF 32000-1, 3D view dictionary). The camera looks down its own -z, so the
-back axis points from the target to the eye and ``co`` is their distance.
+A view's C2W is the camera's x, y and z axes followed by its position. PDF
+32000-1 (13.6.5, "the camera ... facing out along the positive z axis")
+puts the camera's z axis along the line of sight, from the eye towards the
+target, and ``co`` is the distance along it to the centre of orbit. So the
+columns are left, up and forward, the way media9 writes them. An earlier
+version wrote the back axis there: Acrobat then put the centre of orbit
+behind the camera, about two model distances from the model, and every
+drag swung the model across the screen.
+
+``camera_axes`` keeps the right, up and back axes for the U3D view node,
+which looks down its own -z.
 """
 from __future__ import annotations
 
@@ -29,21 +37,32 @@ def _norm(a):
     return (a[0] / length, a[1] / length, a[2] / length)
 
 
-def _view(name: str, eye, target, up, fov: float) -> dict:
+def camera_axes(eye, target, up) -> tuple:
+    """``(right, up, back)``: unit axes of a camera at ``eye`` looking at
+    ``target``, ``up`` made square to the line of sight."""
     back = _norm(_sub(eye, target))
     if back is None:
-        back = (0.0, 0.0, 1.0)
-    up = _norm(up) or (0.0, 1.0, 0.0)
+        back = (0.0, -1.0, 0.0)
+    up = _norm(up) or (0.0, 0.0, 1.0)
     if abs(up[0] * back[0] + up[1] * back[1] + up[2] * back[2]) > 0.9999:
-        up = (0.0, 0.0, -1.0) if back[1] > 0 else (0.0, 0.0, 1.0)
+        if abs(back[2]) > 0.9999:                    # straight down or up: north is up
+            up = (0.0, 1.0, 0.0) if back[2] > 0 else (0.0, -1.0, 0.0)
+        else:
+            up = (0.0, 0.0, 1.0)
     right = _norm(_cross(up, back))
-    up = _cross(back, right)
+    return right, _cross(back, right), back
+
+
+def _view(name: str, eye, target, up, fov: float) -> dict:
+    right, up, back = camera_axes(eye, target, up)
+    left = (-right[0], -right[1], -right[2])
+    forward = (-back[0], -back[1], -back[2])
     distance = math.sqrt(sum(v * v for v in _sub(eye, target)))
     if distance < 1e-9:
         distance = 1.0
         eye = (target[0] + back[0], target[1] + back[1], target[2] + back[2])
     return {"name": name,
-            "c2w": [float(v) for v in (*right, *up, *back, *eye)],
+            "c2w": [float(v) for v in (*left, *up, *forward, *eye)],
             "co": float(distance), "fov": float(fov)}
 
 
@@ -66,13 +85,14 @@ def make_views(camera, bbox) -> list:
             if along > 1e-6:
                 target = tuple(eye[i] + forward[i] * along for i in range(3))
         views.append(_view("Exported view", eye, target, camera["up"], camera.get("fov") or 45.0))
-    iso = _norm((1.0, 1.0, 1.0))
-    axes = [("Iso", iso, (0.0, 1.0, 0.0)),
-            ("Top", (0.0, 1.0, 0.0), (0.0, 0.0, -1.0)),
-            ("Front", (0.0, 0.0, 1.0), (0.0, 1.0, 0.0)),
-            ("Back", (0.0, 0.0, -1.0), (0.0, 1.0, 0.0)),
-            ("Left", (-1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
-            ("Right", (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))]
+    # Eye directions from the centre; Z is up and the front faces -Y.
+    up_z = (0.0, 0.0, 1.0)
+    axes = [("Iso", _norm((1.0, -1.0, 1.0)), up_z),
+            ("Top", (0.0, 0.0, 1.0), (0.0, 1.0, 0.0)),
+            ("Front", (0.0, -1.0, 0.0), up_z),
+            ("Back", (0.0, 1.0, 0.0), up_z),
+            ("Left", (-1.0, 0.0, 0.0), up_z),
+            ("Right", (1.0, 0.0, 0.0), up_z)]
     for name, direction, up in axes:
         eye = tuple(centre[i] + direction[i] * distance for i in range(3))
         views.append(_view(name, eye, centre, up, AXIS_FOV_DEG))

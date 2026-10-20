@@ -6,7 +6,7 @@ def test_package_key():
     import igz_pdf3d
     assert igz_pdf3d.KEY == "igz_pdf3d"
     assert igz_pdf3d.EXT_VERSION == 1
-    assert igz_pdf3d.__version__ == "1.0.1"
+    assert igz_pdf3d.__version__ == "1.0.2"
 
 
 def test_sample_files_present(data_dir):

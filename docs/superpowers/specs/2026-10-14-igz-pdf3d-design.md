@@ -74,9 +74,18 @@ Data flow:
 3. The dialog writes the file, or deletes the partial file on failure.
 
 Coordinates: positions pass through the placement transform (world, metres),
-then the unit scale (inches: ×39.3701; metres: ×1), then a fixed rotation
-from Z-up to Y-up (x, y, z) → (x, z, −y). The camera is converted the same
-way. All six named views are computed from the converted bounding box.
+then the unit scale (inches: ×39.3701; metres: ×1). The axes stay Z-up:
+Acrobat treats Z as up (its Spin tool turns about Z). 1.0.0 and 1.0.1 turned
+the model Y-up, which made Acrobat's tools tumble it (changed in 1.0.2). The
+camera is scaled the same way. All six named views are computed from the
+scaled bounding box.
+
+A view's C2W columns are the camera's left, up and forward axes, then the
+eye (PDF 32000-1 13.6.5: the camera faces along its positive z axis; media9
+writes them the same way). `/CO` is the distance along forward to the centre
+of orbit. Up to 1.0.1 the third column was the back axis. Acrobat then
+orbited a point behind the camera, and every drag swung the model across the
+screen.
 
 ## Materials and textures
 

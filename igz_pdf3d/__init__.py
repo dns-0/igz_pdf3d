@@ -9,7 +9,7 @@ from __future__ import annotations
 
 KEY = "igz_pdf3d"
 EXT_VERSION = 1
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 def setup(app):
